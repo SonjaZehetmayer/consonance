@@ -1,0 +1,347 @@
+Public code fuer omnibus fisher stouffer
+
+
+
+
+
+
+
+library(matrixStats) #wichtig
+library(dplyr) #wichtig
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#install.packages("BiocManager")
+#BiocManager::install("survcomp")
+library(survcomp) #wichtig
+#BiocManager::install("multtest")
+#library(multtest)
+#install.packages("mutoss")
+#library(mutoss)
+#library(harmonicmeanp)
+#library(gtools)
+#library(Rfast) darf nicht aufgerufen werden!!!!!!!!!
+
+#install.packages("metap")
+#library(metap)
+
+
+####################################################################################################
+# Vorbereitung unter H0 fuer omnibus log p und omnibus harmonic
+
+
+
+
+
+####################################################################################################
+transf <- function(x) -log(x)  #gewaehlte omnibus transformation
+
+
+all_comb <- function(n){
+  do.call(rbind,
+          lapply(X = 1:n, FUN = function(i){
+            t(combn(x = 1:n, m = i, FUN = function(x) c(x, rep(0,n-i))))
+          })
+  )
+}
+
+
+csStat.H0.func<-function(m,N.sim)
+  {
+  stat.H0.p<-matrix(runif(N.sim*m), nrow = m)
+  stat.H0<-apply(stat.H0.p,2,log)*(-1) #die Daten werden -log transformiert
+  stat.H0sort <- apply(stat.H0,2,sort,decreasing=TRUE) ##Sortierung
+  csStat.H0 <- apply(stat.H0sort,2,cummean) #cummeans werden berechnet
+  csStat.H0
+  }
+
+
+
+omnibus.test  <- function (p, N.sim=100000)   #test fuer log omnibus (im Prinzip global, darauf wird bei closed test zurueckgegriffen)
+{
+  m<-length(p)
+  set.seed(2404)   #fixiert am 7.10.22
+  csStat.H0<-csStat.H0.func(m,N.sim)
+  p <- matrix(p, ncol = 1)
+  stat <- -log(p)
+  
+  csStat <- colCumsums(apply(stat, 2, sort, decreasing = TRUE))/1:m #cummeans
+  for (h in 1:m) {
+    csStat[h, ] <- ecdf(csStat.H0[h, ])(csStat[h, ]) #rank der beobachteten cumsums
+    csStat.H0[h, ] <- rank(csStat.H0[h, ])/ncol(csStat.H0) #rank der beobachteten cumsums unter H0
+  }
+  1 - ecdf(colMaxs(csStat.H0))(colMaxs(csStat)) # ) #    #colMaxs(csStat) Teststat... rank der beob cumsums unter allen ranks unter H0
+}
+
+
+omnibus.test(c(0.05,0.13))
+#0.05063
+
+closed.omnibus<-function(p,alpha)
+{
+  m<-length(p)
+  allcombs<-all_comb(m)
+  bincombinations<-matrix(0,ncol=m,nrow=nrow(allcombs))
+  
+  for (i in 1:nrow(bincombinations))
+    bincombinations[i,c(allcombs[i,])]<-TRUE
+  
+  rejected<-rep(0,(2^m - 1))
+  pall<-vector(length=(2^m - 1))
+  pall[1:m]<-p
+  rejected[1:m]<-p<=alpha
+  
+  if (sum(rejected[1:m])>0) #nur wenn mind 1 Hyp<=alpha geht es weiter
+  {
+    for (j in (m+1):(2^m - 1))  
+      pall[j]<-omnibus.test(p[allcombs[j,]])
+  }
+  
+  rres<-(bincombinations*pall)<=alpha
+  result<-apply(rres,2,sum)!=(2^m - 1)  #FALSE..H1, TRUE..H0
+  result
+}
+
+closed.omnibus(c(0.05,0.11),0.05)
+  
+setwd("X:/Server/Forschung/2018_omnibus_closedtest/data")  
+load("Tnew.H0.Rdata")
+load("Tnew.H0a.Rdata")
+
+omnibus.consonance  <- function (p, alpha,N.sim)   #test fuer omnibus (im Prinzip global, darauf wird bei closed test zurueckgegriffen)
+{
+  m<- length(p)#p <- matrix(p, ncol = 1)#
+  
+  allcombs<-all_comb(m)
+  bincombinations<-matrix(0,ncol=m,nrow=nrow(allcombs))
+  
+  for (i in 1:nrow(bincombinations))
+    bincombinations[i,c(allcombs[i,])]<-TRUE
+  
+  rejected<-rep(0,(2^m - 1))
+  pall<-vector(length=(2^m - 1))
+  pall[1:m]<-p
+  rejected[1:m]<-p<=alpha ####da kann ich dann eigentlich aufhoeren, falls alles 0!!!
+  
+  for (j in (m+1):(2^m - 1))  
+  {
+    pval<-p[allcombs[j,]]
+    pval<-matrix(pval, ncol = 1)
+    stat <- transf(pval)
+    m.temp<-length(pval)
+    index<-allcombs[j,][allcombs[j,]>0]
+    laststagecomb<-t(combn(index,m.temp-1))
+    laststagecomb1<-cbind(laststagecomb,matrix(0,nrow=m.temp,ncol=m-m.temp+1))#cbind(laststagecomb,matrix(rep(0,m-m.temp+1),)
+    #
+    #row.match(laststagecomb1, data.frame(allcombs))
+    pval.index<-apply(laststagecomb1,1,row.match,data.frame(allcombs))
+    p.laststage<-pall[pval.index]
+    
+    csStat <- colCumsums(apply(stat, 2, sort, decreasing = TRUE))/1:m.temp#
+    csStat.H0l<-csStat.H0.func(m.temp,N.sim)#csStat.H0[[m.temp-1]] # #hole aus der Liste das richtige Szenario raus - (N.hyp-1) weil ich erst bei 2 beginne
+    
+    #if (m.temp==2)
+    #{
+    for (h in 1:m.temp) #
+    {#
+      csStat[h, ] <- ecdf(csStat.H0l[h, ])(csStat[h, ])#
+      csStat.H0l[h, ] <- rank(csStat.H0l[h, ])/ncol(csStat.H0l)# #cumulativen summen werden zu glv. umgerechnet 
+    }#
+    #T1<-colMaxs(csStat)  #Originalteststatistik# nur, wenn ich die teststat. verteilung generiere bei Tnew.H0. sonst 1-p. muss equivalent sein, dann gibt es die selben Ergebnisse
+    T1<-ecdf(colMaxs(csStat.H0l))(colMaxs(csStat)) # ) #1-p-value
+    #Tnew<-min(T1,max(p.laststage <=alpha))
+    Tnew<-min(T1,sum(p.laststage <=alpha)>=(m.temp-1))
+    
+    #}
+    
+    if (alpha==0.05)  
+      Tnew.H0.om<-Tnew.H0[[m.temp-1]]
+    if (alpha==0.025)  
+      Tnew.H0.om<-Tnew.H0a[[m.temp-1]]
+    pall[j]<-sum(Tnew.H0.om >= Tnew) / length(Tnew.H0.om) #schnellere Version fuer Vektor
+    
+  }
+  
+  rres<-(bincombinations*pall)<=alpha
+  result<-apply(rres,2,sum)!=(2^m - 1)  #FALSE..H1, TRUE..H0
+  
+  list(result,tail(pall,n=1))
+}
+
+omnibus.consonance(c(0.05,0.005,0.42), alpha=0.05,N.sim=10000)
+
+
+#fisher.cons<-fisher.consonance3(c(0.05,0.05,0.12),alpha=0.05)
+p<-c(0.05,0.05,0.42)
+#c((sum((p[1]<=alpha)*(fisher.cons[1:2]<=alpha)*(fisher.cons[4]<=alpha))>1),     (sum((p[2]<=alpha)*(fisher.cons[c(1,3)]<=alpha)*(fisher.cons[4]<=alpha))>1),(sum((p[3]<=alpha)*(fisher.cons[2:3]<=alpha)*(fisher.cons[4]<=alpha))>1))
+
+
+
+
+
+######################################################################################################
+###############fuer Fisher test
+
+fisher.closed<-function(p,alpha)
+{
+  m<-length(p)
+  allcombs<-all_comb(m)
+  bincombinations<-matrix(0,ncol=m,nrow=nrow(allcombs))
+  
+  for (i in 1:nrow(bincombinations))
+    bincombinations[i,c(allcombs[i,])]<-TRUE
+  
+  rejected<-rep(0,(2^m - 1))
+  pall<-vector(length=(2^m - 1))
+  pall[1:m]<-p
+  rejected[1:m]<-p<=alpha
+  
+  if (sum(rejected[1:m])>0) #nur wenn mind 1 Hyp<=alpha geht es weiter
+  {
+    for (j in (m+1):(2^m - 1))  
+      pall[j]<-combine.test(p[allcombs[j,]],method="fisher")#combine.test(selection,method="fisher")
+  }
+  
+  rres<-(bincombinations*pall)<=alpha
+  result<-apply(rres,2,sum)!=(2^m - 1)  #FALSE..H1, TRUE..H0
+  result
+}
+
+p<-c(0.1,0.1,0.1)
+fisher.closed(p,0.05)
+#TRUE TRUE TRUE
+combine.test(p,method="fisher")
+
+
+
+###########################################################################################
+load("Tnew.H0.fi.Rdata")
+load("Tnew.H0a.fi.Rdata")
+fisher.consonance  <- function (p, alpha)   #test fuer fisher,im Prinzip global, darauf wird bei closed test zurueckgegriffen)
+{
+  m<-length(p)
+  
+  allcombs<-all_comb(m)
+  bincombinations<-matrix(0,ncol=m,nrow=nrow(allcombs))
+  
+  for (i in 1:nrow(bincombinations))
+    bincombinations[i,c(allcombs[i,])]<-TRUE
+  
+  rejected<-rep(0,(2^m - 1))
+  pall<-vector(length=(2^m - 1))
+  pall[1:m]<-p
+  rejected[1:m]<-p<=alpha ####da kann ich dann eigentlich aufhoeren, falls alles 0!!!
+  
+  #if (sum(rejected[1:m])>0) #nur wenn mind 1 Hyp<=alpha geht es weiter
+  #{
+  for (j in (m+1):(2^m - 1))  
+  {
+    pval<-p[allcombs[j,]]
+    T1<-1-combine.test(pval,method="fisher") #-2 * sum(log(p))  #combine.test(p,method="fisher")
+    
+    m.temp<-length(pval)
+    index<-allcombs[j,][allcombs[j,]>0]
+    laststagecomb<-t(combn(index,m.temp-1))
+    laststagecomb1<-cbind(laststagecomb,matrix(0,nrow=m.temp,ncol=m-m.temp+1))#cbind(laststagecomb,matrix(rep(0,m-m.temp+1),)
+    #row.match(laststagecomb1, data.frame(allcombs))
+    pval.index<-apply(laststagecomb1,1,row.match,data.frame(allcombs))
+    p.laststage<-pall[pval.index]
+    #Tnew<-min(T1,max(p.laststage <=alpha))
+    Tnew<-min(T1,sum(p.laststage <=alpha)>=(m.temp-1))
+    if (alpha==0.05)
+      Tnew.H0<-Tnew.H0.fi[[m.temp-1]]
+    if (alpha==0.025)
+      Tnew.H0<-Tnew.H0a.fi[[m.temp-1]]
+    
+    pall[j]<-sum(Tnew.H0 >= Tnew) / length(Tnew.H0) #schnellere Version fuer Vektor
+  }
+  
+  rres<-(bincombinations*pall)<=alpha
+  result<-apply(rres,2,sum)!=(2^m - 1)  #FALSE..H1, TRUE..H0
+  
+  list(result,tail(pall,n=1))
+}
+
+fisher.consonance(c(0.15,0.04),0.05)
+#0.03446
+
+######################################################################################################
+###############fuer stouffer test
+
+stouffer.closed<-function(p,alpha)
+{
+  m<-length(p)
+  allcombs<-all_comb(m)
+  bincombinations<-matrix(0,ncol=m,nrow=nrow(allcombs))
+  
+  for (i in 1:nrow(bincombinations))
+    bincombinations[i,c(allcombs[i,])]<-TRUE
+  
+  rejected<-rep(0,(2^m - 1))
+  pall<-vector(length=(2^m - 1))
+  pall[1:m]<-p
+  rejected[1:m]<-p<=alpha
+  
+  if (sum(rejected[1:m])>0) #nur wenn mind 1 Hyp<=alpha geht es weiter
+  {
+    for (j in (m+1):(2^m - 1))  
+      pall[j]<-combine.test(p[allcombs[j,]],method="z.transform")#combine.test(selection,method="fisher")
+  }
+  
+  rres<-(bincombinations*pall)<=alpha
+  result<-apply(rres,2,sum)!=(2^m - 1)  #FALSE..H1, TRUE..H0
+  result
+}
+
+p<-c(0.1,0.1,0.1)
+stouffer.closed(p,0.05)
+
+
+load("Tnew.H0.st.Rdata")
+load("Tnew.H0a.st.Rdata")
+stouffer.consonance  <- function (p, alpha)   #test fuer fisher,im Prinzip global, darauf wird bei closed test zurueckgegriffen)
+{
+  m<-length(p)
+  
+  allcombs<-all_comb(m)
+  bincombinations<-matrix(0,ncol=m,nrow=nrow(allcombs))
+  
+  for (i in 1:nrow(bincombinations))
+    bincombinations[i,c(allcombs[i,])]<-TRUE
+  
+  rejected<-rep(0,(2^m - 1))
+  pall<-vector(length=(2^m - 1))
+  pall[1:m]<-p
+  rejected[1:m]<-p<=alpha ####da kann ich dann eigentlich aufhoeren, falls alles 0!!!
+  
+  #if (sum(rejected[1:m])>0) #nur wenn mind 1 Hyp<=alpha geht es weiter
+  #{
+  for (j in (m+1):(2^m - 1))  
+  {
+    pval<-p[allcombs[j,]]
+    T1<-1-combine.test(pval,method="z.transform") #-2 * sum(log(p))  #combine.test(p,method="fisher") 
+    
+    m.temp<-length(pval)
+    index<-allcombs[j,][allcombs[j,]>0]
+    laststagecomb<-t(combn(index,m.temp-1))
+    laststagecomb1<-cbind(laststagecomb,matrix(0,nrow=m.temp,ncol=m-m.temp+1))#cbind(laststagecomb,matrix(rep(0,m-m.temp+1),)
+    #row.match(laststagecomb1, data.frame(allcombs))
+    pval.index<-apply(laststagecomb1,1,row.match,data.frame(allcombs))
+    p.laststage<-pall[pval.index]
+    #Tnew<-min(T1,max(p.laststage <=alpha))
+    Tnew<-min(T1,sum(p.laststage <=alpha)>=(m.temp-1))
+    if (alpha==0.05)
+      Tnew.H0<-Tnew.H0.st[[m.temp-1]]
+    if (alpha==0.025)
+      Tnew.H0<-Tnew.H0a.st[[m.temp-1]]
+    
+    pall[j]<-sum(Tnew.H0 >= Tnew) / length(Tnew.H0) #schnellere Version fuer Vektor
+  }
+  #}
+  
+  rres<-(bincombinations*pall)<=alpha
+  result<-apply(rres,2,sum)!=(2^m - 1)  #FALSE..H1, TRUE..H0
+  
+  list(result,tail(pall,n=1))
+}
+
+p<-c(0.05,0.15)
+stouffer.closed(p,alpha=0.05)
