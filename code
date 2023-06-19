@@ -1,3 +1,29 @@
+#########################################################################################################################################################################################################
+# Last modification: June 2023
+#
+# This is source code in the R programming language (https://www.r-project.org/) for the manuscript "A general consonance principle for closure tests based on p-values" 
+# (Sonja Zehetmayer, Franz Koenig, Martin Posch).
+#
+# Implements the consonance principle for the Fisher combination test, Stouffer test and Omnibus test with log transformation of the p-values.
+#
+#
+#########################################################################################################################################################################################################
+#
+# INPUT PARAMETERS
+# ----------------
+#
+# p: vector of elementary p-values (maximum 10 for Fisher combination and Stouffer test, maximum 6 for Omnibus test)
+# alpha: Significance level, possible values are 0.025 and 0.05
+# method:"omnibus", "fisher", "stouffer"
+# N.sim: Number of simulation runs for the omnibus test
+#
+#
+# OUTPUT PARAMETERS
+# -----------------
+
+
+
+
 library(matrixStats)
 library(dplyr)
 library(survcomp)
