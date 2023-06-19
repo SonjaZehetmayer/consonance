@@ -154,7 +154,12 @@ test.consonance  <- function (p, alpha,method="fisher",N.sim)
 
 #EXAMPLE
 
-p<-c(0.05,.1,.1) #vector of elementary p-values
+p<-c(0.05,.1) #vector of elementary p-values
+test.consonance(p,alpha=0.05,method="omnibus",N.sim=100000)
+test.consonance(p,alpha=0.05,method="fisher")
+test.consonance(p,alpha=0.05,method="stouffer")
+
+p<-c(0.051,.1) #vector of elementary p-values
 test.consonance(p,alpha=0.05,method="omnibus",N.sim=10000)
 test.consonance(p,alpha=0.05,method="fisher")
 test.consonance(p,alpha=0.05,method="stouffer")
