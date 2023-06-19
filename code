@@ -1,18 +1,8 @@
-Public code fuer omnibus fisher stouffer
-
-
-
-
-
-
-
-library(matrixStats) #wichtig
-library(dplyr) #wichtig
-library(survcomp) #wichtig
-
+library(matrixStats)
+library(dplyr)
+library(survcomp)
 
 transf <- function(x) -log(x)
-
 
 all_comb <- function(n){
   do.call(rbind,
@@ -26,28 +16,28 @@ all_comb <- function(n){
 csStat.H0.func<-function(m,N.sim)
   {
   stat.H0.p<-matrix(runif(N.sim*m), nrow = m)
-  stat.H0<-apply(stat.H0.p,2,log)*(-1) #die Daten werden -log transformiert
-  stat.H0sort <- apply(stat.H0,2,sort,decreasing=TRUE) ##Sortierung
-  csStat.H0 <- apply(stat.H0sort,2,cummean) #cummeans werden berechnet
+  stat.H0<-apply(stat.H0.p,2,log)*(-1) #data are -log transformed
+  stat.H0sort <- apply(stat.H0,2,sort,decreasing=TRUE) #sort
+  csStat.H0 <- apply(stat.H0sort,2,cummean) #cummeans are calculated
   csStat.H0
   }
 
 
 
-omnibus.test  <- function (p, N.sim=100000)   #test fuer log omnibus (im Prinzip global, darauf wird bei closed test zurueckgegriffen)
+omnibus.test  <- function (p, N.sim=100000)   #test for omnibus with log transformation (global test)
 {
   m<-length(p)
-  set.seed(2404)   #fixiert am 7.10.22
+  set.seed(2404) 
   csStat.H0<-csStat.H0.func(m,N.sim)
   p <- matrix(p, ncol = 1)
   stat <- -log(p)
   
   csStat <- colCumsums(apply(stat, 2, sort, decreasing = TRUE))/1:m #cummeans
   for (h in 1:m) {
-    csStat[h, ] <- ecdf(csStat.H0[h, ])(csStat[h, ]) #rank der beobachteten cumsums
-    csStat.H0[h, ] <- rank(csStat.H0[h, ])/ncol(csStat.H0) #rank der beobachteten cumsums unter H0
+    csStat[h, ] <- ecdf(csStat.H0[h, ])(csStat[h, ]) #rank of observed cumsums
+    csStat.H0[h, ] <- rank(csStat.H0[h, ])/ncol(csStat.H0) #rank of observed cumsums given H0
   }
-  1 - ecdf(colMaxs(csStat.H0))(colMaxs(csStat)) # ) #    #colMaxs(csStat) Teststat... rank der beob cumsums unter allen ranks unter H0
+  1 - ecdf(colMaxs(csStat.H0))(colMaxs(csStat)) # ) #    #colMaxs(csStat) teststat... rank of observed cumsums among all ranks given H=
 }
 
 
@@ -88,7 +78,6 @@ closed.test<-function(p,alpha,method="stouffer",N.sim=100)
 
 closed.test(c(0.05,0.11),0.05,method="fisher",N.sim=100)
   
-#setwd("X:/Server/Forschung/2018_omnibus_closedtest/data")  
 load("Tnew.H0.Rdata")
 load("Tnew.H0a.Rdata")
 load("Tnew.H0.fi.Rdata")
@@ -97,7 +86,7 @@ load("Tnew.H0.st.Rdata")
 load("Tnew.H0a.st.Rdata")
 
 
-test.consonance  <- function (p, alpha,method="fisher",N.sim)   #test fuer fisher,im Prinzip global, darauf wird bei closed test zurueckgegriffen)
+test.consonance  <- function (p, alpha,method="fisher",N.sim)   
 {
   m<-length(p)
   
