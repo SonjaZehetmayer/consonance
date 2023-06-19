@@ -132,17 +132,17 @@ test.consonance  <- function (p, alpha,method="fisher",N.sim)
     
     if (alpha==0.05)
       {
-      if (method=="omnibus") Tnew.H0<-Tnew.H0[[m.temp-1]]
-      if (method=="fisher") Tnew.H0<-Tnew.H0.fi[[m.temp-1]]
-      if (method=="stouffer") Tnew.H0<-Tnew.H0.st[[m.temp-1]]
+      if (method=="omnibus") Tnew.Hnull<-Tnew.H0[[m.temp-1]]
+      if (method=="fisher") Tnew.Hnull<-Tnew.H0.fi[[m.temp-1]]
+      if (method=="stouffer") Tnew.Hnull<-Tnew.H0.st[[m.temp-1]]
       }
     if (alpha==0.025)
       {
-      if (method=="omnibus") Tnew.H0<-Tnew.H0a[[m.temp-1]]
-      if (method=="fisher") Tnew.H0<-Tnew.H0a.fi[[m.temp-1]]
-      if (method=="stouffer") Tnew.H0<-Tnew.H0a.st[[m.temp-1]]
+      if (method=="omnibus") Tnew.Hnull<-Tnew.H0a[[m.temp-1]]
+      if (method=="fisher") Tnew.Hnull<-Tnew.H0a.fi[[m.temp-1]]
+      if (method=="stouffer") Tnew.Hnull<-Tnew.H0a.st[[m.temp-1]]
       }
-    pall[j]<-sum(Tnew.H0 >= Tnew) / length(Tnew.H0) #schnellere Version fuer Vektor
+    pall[j]<-sum(Tnew.Hnull >= Tnew) / length(Tnew.Hnull) #schnellere Version fuer Vektor
   }
   
   rres<-(bincombinations*pall)<=alpha
@@ -154,7 +154,7 @@ test.consonance  <- function (p, alpha,method="fisher",N.sim)
 
 #EXAMPLE
 
-p<-c(0.05,.1,.1)
-test.consonance(p,alpha=0.025,method="omnibus",N.sim=10000)
-test.consonance(p,alpha=0.025,method="fisher")
-test.consonance(p,alpha=0.025,method="stouffer")
+p<-c(0.05,.1,.1) #vector of elementary p-values
+test.consonance(p,alpha=0.05,method="omnibus",N.sim=10000)
+test.consonance(p,alpha=0.05,method="fisher")
+test.consonance(p,alpha=0.05,method="stouffer")
