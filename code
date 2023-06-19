@@ -1,13 +1,15 @@
 #########################################################################################################################################################################################################
 # Last modification: June 2023
 #
-# This is source code in the R programming language (https://www.r-project.org/) for the manuscript "A general consonance principle for closure tests based on p-values" 
+# This is source code in the R programming language (https://www.r-project.org/) for Algorithm 1 of the manuscript "A general consonance principle for closure tests based on p-values" 
 # (Sonja Zehetmayer, Franz Koenig, Martin Posch).
 #
 # Implements the consonance principle for the Fisher combination test, Stouffer test and Omnibus test with log transformation of the p-values.
 #
 #
 #########################################################################################################################################################################################################
+#
+# FUNCTION test.consonance: Algorithm 1 from Manuscript
 #
 # INPUT PARAMETERS
 # ----------------
@@ -20,6 +22,15 @@
 #
 # OUTPUT PARAMETERS
 # -----------------
+#
+# [1] vector of Boolean values: FALSE (in case of rejection of elementary hypothesis with the proposed procedure) or TRUE (no rejection of elementary hypothesis)
+# [2] p-value of global test of consonance procedure
+#
+#
+#########################################################################################################################################################################################################
+# No warranty is given about the validity of the program!
+#########################################################################################################################################################################################################
+
 
 
 
@@ -103,7 +114,8 @@ closed.test<-function(p,alpha,method="stouffer",N.sim=100)
 
 
 closed.test(c(0.05,0.11),0.05,method="fisher",N.sim=100)
-  
+
+#global null distributions
 load("Tnew.H0.Rdata")
 load("Tnew.H0a.Rdata")
 load("Tnew.H0.fi.Rdata")
