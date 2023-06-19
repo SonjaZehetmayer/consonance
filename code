@@ -154,7 +154,7 @@ test.consonance  <- function (p, alpha,method="fisher",N.sim)
 
 #EXAMPLE
 
-p<-c(0.049,1)
-test.consonance(p,alpha=0.05,method="omnibus",N.sim=10000)
-test.consonance(p,alpha=0.05,method="fisher",N.sim=10000)
-test.consonance(p,alpha=0.05,method="stouffer",N.sim=10000)
+p<-c(0.05,.1,.1)
+test.consonance(p,alpha=0.025,method="omnibus",N.sim=10000)
+test.consonance(p,alpha=0.025,method="fisher")
+test.consonance(p,alpha=0.025,method="stouffer")
